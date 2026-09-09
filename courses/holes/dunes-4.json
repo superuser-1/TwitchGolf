@@ -1,0 +1,16 @@
+{
+  "id": "dunes-4",
+  "name": "Dunes — 4",
+  "size": { "w": 100, "h": 150 },
+  "par": 3,
+  "tee": { "x": 22, "y": 134 },
+  "cup": { "x": 76, "y": 28, "radius": 2.4 },
+  "surfaces": [
+    {
+      "type": "slope",
+      "shape": { "kind": "rect", "x": 40, "y": 50, "w": 60, "h": 40 },
+      "accel": { "x": 0, "y": 6 }
+    },
+    { "type": "sand", "shape": { "kind": "circle", "x": 55, "y": 95, "r": 15 } }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "seaside-2",
+  "name": "Seaside — 2",
+  "size": { "w": 100, "h": 150 },
+  "par": 3,
+  "tee": { "x": 20, "y": 134 },
+  "cup": { "x": 78, "y": 24, "radius": 2.4 },
+  "surfaces": [
+    { "type": "sand", "shape": { "kind": "circle", "x": 45, "y": 80, "r": 13 } },
+    { "type": "sand", "shape": { "kind": "circle", "x": 72, "y": 55, "r": 10 } },
+    { "type": "green", "shape": { "kind": "circle", "x": 78, "y": 24, "r": 14 } }
+  ]
+}

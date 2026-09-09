@@ -1,0 +1,16 @@
+{
+  "id": "seaside-4",
+  "name": "Seaside — 4",
+  "size": { "w": 100, "h": 150 },
+  "par": 2,
+  "tee": { "x": 50, "y": 120 },
+  "cup": { "x": 50, "y": 40, "radius": 2.6 },
+  "surfaces": [
+    {
+      "type": "slope",
+      "shape": { "kind": "rect", "x": 0, "y": 60, "w": 100, "h": 30 },
+      "accel": { "x": 7, "y": 0 }
+    },
+    { "type": "green", "shape": { "kind": "circle", "x": 50, "y": 40, "r": 16 } }
+  ]
+}

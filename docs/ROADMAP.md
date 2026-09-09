@@ -134,14 +134,22 @@ sequence; HTTP surface enforces auth + roles.
 **Done:** chat command → EBS → broadcast → animated ball in the browser, with
 player vs spectator views.
 
-## Phase 6 — Multi-hole courses + scorecard
+## Phase 6 — Multi-hole courses + scorecard ☑
 
-- ☐ Course sequencing in `GameManager`; per-hole stroke tracking.
-- ☐ Hole-advance rules end to end; `hole-complete` packet.
-- ☐ Course-results screen in frontend.
-- ☐ Ship **2 handmade courses** (3–9 holes each) in `courses/`.
+- ☑ Course sequencing + per-hole stroke tracking + hole-advance rules + the
+  `hole-complete` packet (built in phase 3; exercised here end to end).
+- ☑ Two 4-hole courses shipped: `courses/seaside.json` (water, bunkers, a
+  walled dogleg, a slope) and `courses/dunes.json` (bunkers, a windmill, a
+  water bridge, a slope). `practice` kept for quick testing.
+- ☑ Frontend: `state.ts` accumulates a `scorecard` from `hole-complete`;
+  `canvas.ts` draws a "Course complete" results panel (final order + totals +
+  to-par) on `course-complete`.
+- ☑ `courses/loader.test.ts` validates every shipped course; new EBS
+  `course.test.ts` plays all four holes of Seaside via `ManualClock` and
+  asserts `course-complete`, four `hole-complete` packets, and per-player
+  final standings (`thru === holeCount`).
 
-**Done when:** a full multi-hole course can be played start to finish locally.
+**Done:** a full multi-hole course plays start to finish; results screen renders.
 
 ## Phase 7 — Tournaments + stats
 

@@ -1,0 +1,10 @@
+{
+  "id": "dunes-2",
+  "name": "Dunes — 2",
+  "size": { "w": 100, "h": 150 },
+  "par": 4,
+  "tee": { "x": 50, "y": 138 },
+  "cup": { "x": 50, "y": 20, "radius": 2.6 },
+  "obstacles": [{ "kind": "windmill", "x": 50, "y": 70, "radius": 16, "period": 3.5, "phase": 0 }],
+  "surfaces": [{ "type": "green", "shape": { "kind": "circle", "x": 50, "y": 20, "r": 16 } }]
+}

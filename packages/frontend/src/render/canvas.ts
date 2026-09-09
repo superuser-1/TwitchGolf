@@ -12,6 +12,13 @@ export interface HudInfo {
   phase: string;
 }
 
+export interface ScorecardRow {
+  name: string;
+  total: number;
+  toPar: number;
+  perHole: number[];
+}
+
 export interface RenderView {
   hole: Hole | null;
   balls: ClientBall[];
@@ -21,6 +28,9 @@ export interface RenderView {
   hud: HudInfo;
   standings: StandingsRow[];
   showStandings: boolean;
+  holeCount: number;
+  scorecard: ScorecardRow[];
+  showResults: boolean;
 }
 
 /** Maps logical field units to letterboxed canvas pixels. */
@@ -141,7 +151,37 @@ export class Renderer {
     }
 
     this.drawHud(view.hud, cw);
-    if (view.showStandings) this.drawStandings(view.standings, cw, ch);
+    if (view.showStandings && !view.showResults) this.drawStandings(view.standings, cw, ch);
+    if (view.showResults) this.drawResults(view, cw, ch);
+  }
+
+  private drawResults(view: RenderView, cw: number, ch: number): void {
+    const { ctx } = this;
+    ctx.fillStyle = "rgba(0,0,0,0.72)";
+    ctx.fillRect(0, 0, cw, ch);
+
+    const rows = view.scorecard.length
+      ? view.scorecard
+      : view.standings.map((s) => ({ name: s.name, total: s.total, toPar: s.toPar, perHole: [] }));
+
+    const bw = Math.min(cw - 24, 260);
+    const bh = Math.min(ch - 24, 60 + rows.length * 18 + 24);
+    const bx = (cw - bw) / 2;
+    const by = (ch - bh) / 2;
+    ctx.fillStyle = "rgba(20,24,20,0.95)";
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeRect(bx, by, bw, bh);
+
+    this.text(bx + bw / 2, by + 24, "Course complete", 16, "center");
+    let y = by + 48;
+    rows.forEach((r, i) => {
+      const toPar = r.toPar === 0 ? "E" : r.toPar > 0 ? `+${r.toPar}` : `${r.toPar}`;
+      this.text(bx + 14, y, `${i + 1}. ${r.name}`, 12, "left");
+      this.text(bx + bw - 14, y, `${r.total}  (${toPar})`, 12, "right");
+      y += 18;
+    });
   }
 
   private fillShape(

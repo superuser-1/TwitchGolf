@@ -28,6 +28,8 @@ export interface ClientState {
   hole: Hole | null;
   balls: Map<number, ClientBall>;
   standings: StandingsRow[];
+  /** ballId -> strokes per completed hole (accumulated from `hole-complete`). */
+  scorecard: Map<number, number[]>;
 
   /** Show every ball (post-hole reveal) until this ms epoch. */
   revealAllUntil: number;
@@ -49,6 +51,7 @@ export function initialState(): ClientState {
     hole: null,
     balls: new Map(),
     standings: [],
+    scorecard: new Map(),
     revealAllUntil: 0,
   };
 }
@@ -80,6 +83,7 @@ export function applySession(state: ClientState, session: SessionResponse): Clie
     next.hole = null;
     next.balls = new Map();
     next.standings = [];
+    next.scorecard = new Map();
     return next;
   }
   next.phase = game.phase;
@@ -176,12 +180,14 @@ export function applyMessage(
     }
 
     case "hole-complete": {
+      const scorecard = new Map(state.scorecard);
+      for (const r of msg.results) {
+        const row = [...(scorecard.get(r.id) ?? [])];
+        row[msg.holeIndex] = r.strokes;
+        scorecard.set(r.id, row);
+      }
       return {
-        state: {
-          ...state,
-          phase: "hole-complete",
-          revealAllUntil: nowMs + 5000,
-        },
+        state: { ...state, phase: "hole-complete", revealAllUntil: nowMs + 5000, scorecard },
         needsSession: false,
       };
     }

@@ -89,6 +89,14 @@ async function boot(): Promise<void> {
       standings: state.standings,
       showStandings:
         !state.isPlayer || now < state.revealAllUntil || state.phase.includes("complete"),
+      holeCount: state.holeCount,
+      scorecard: state.standings.map((s) => ({
+        name: s.name,
+        total: s.total,
+        toPar: s.toPar,
+        perHole: state.scorecard.get(s.id) ?? [],
+      })),
+      showResults: state.phase === "course-complete",
     };
     renderer.draw(view);
     requestAnimationFrame(frame);
