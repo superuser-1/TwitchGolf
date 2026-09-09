@@ -11,8 +11,6 @@ import type { Hole, Vec2 } from "@twitch-golf/shared";
 export const MAX_PULL = 60;
 /** Drags shorter than this (field units) are treated as a tap / cancel. */
 const MIN_PULL = 1.8;
-/** How close to the ball a press must start (field units) to begin a drag. */
-const GRAB_RADIUS = 12;
 
 export interface DragSwing {
   angle: number;
@@ -37,10 +35,8 @@ export interface DragContext {
   hasIdentity: boolean;
   allowDrag: boolean;
   hole: Hole | null;
-  /** The player's ball, or the tee if they have not swung yet. */
+  /** The player's ball's current resting spot, or the tee if they haven't swung. */
   myBall: Vec2 | null;
-  /** True once the player has a real ball in play (tightens the grab zone). */
-  hasBall: boolean;
   roundNumber: number;
 }
 
@@ -91,10 +87,9 @@ export function attachDragInput(canvas: HTMLCanvasElement, deps: DragInputDeps):
   const onDown = (e: PointerEvent) => {
     const c = deps.getContext();
     if (!canDrag(c)) return;
-    const p = pointToField(e);
-    if (!p) return;
-    // Before the first shot there's no ball to grab, so allow starting anywhere.
-    if (c.hasBall && Math.hypot(p.x - c.myBall.x, p.y - c.myBall.y) > GRAB_RADIUS) return;
+    // During your turn, a press anywhere on the field starts an aim, always
+    // anchored to your ball's current position.
+    if (!pointToField(e)) return;
     dragging = true;
     try {
       canvas.setPointerCapture(e.pointerId);

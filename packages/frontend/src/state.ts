@@ -160,7 +160,9 @@ export function applyMessage(
           holeIndex: msg.holeIndex,
           roundClosesAt: nowMs + msg.durationSec * 1000,
         },
-        needsSession: state.hole === null,
+        // Refetch each round so myBallId / isPlayer / ball positions stay fresh
+        // (the slingshot anchor tracks the ball's current resting spot).
+        needsSession: true,
       };
     }
 

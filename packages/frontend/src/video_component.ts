@@ -97,8 +97,8 @@ async function boot(): Promise<void> {
   let currentAim: DragAim | null = null;
   const detachDrag = attachDragInput(canvas, {
     getContext: () => {
+      // Anchor on the ball's current resting spot; the tee before the first shot.
       const mb = state.myBallId !== null ? state.balls.get(state.myBallId) : undefined;
-      // A player who hasn't swung yet has no ball — let them aim from the tee.
       const myBall = mb
         ? { x: mb.x, y: mb.y }
         : state.hole
@@ -110,7 +110,6 @@ async function boot(): Promise<void> {
         allowDrag: state.allowDrag,
         hole: state.hole,
         myBall,
-        hasBall: Boolean(mb),
         roundNumber: state.roundNumber,
       };
     },
@@ -121,7 +120,8 @@ async function boot(): Promise<void> {
     onSubmit: (swing) => {
       setStatus(`swing sent: ${Math.round(swing.angle)}° @ ${swing.power}`);
       void submitSwing(cfg, identity, swing).then((r) => {
-        if (!r.ok) setStatus(`swing rejected: ${r.reason ?? r.status}`);
+        if (r.ok) void refetch();
+        else setStatus(`swing rejected: ${r.reason ?? r.status}`);
       });
     },
   });
