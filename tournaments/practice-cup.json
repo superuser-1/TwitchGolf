@@ -1,0 +1,6 @@
+{
+  "id": "practice-cup",
+  "name": "Practice Cup",
+  "courses": ["practice", "practice"],
+  "scoring": "stroke-play"
+}

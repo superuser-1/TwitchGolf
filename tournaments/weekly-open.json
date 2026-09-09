@@ -1,0 +1,6 @@
+{
+  "id": "weekly-open",
+  "name": "Weekly Open",
+  "courses": ["seaside", "dunes"],
+  "scoring": "stroke-play"
+}

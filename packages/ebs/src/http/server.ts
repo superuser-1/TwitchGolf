@@ -5,6 +5,8 @@ import { z } from "zod";
 import type { AppConfig } from "../config";
 import type { CourseRegistry } from "../courses";
 import type { GameManager } from "../game/manager";
+import type { Store } from "../store/types";
+import type { TournamentRegistry } from "../tournaments";
 import { verifyExtensionJwt } from "../twitch/jwt";
 import type { ExtensionIdentity } from "../twitch/jwt";
 
@@ -12,6 +14,8 @@ export interface ServerDeps {
   config: AppConfig;
   manager: GameManager;
   courses: CourseRegistry;
+  tournaments?: TournamentRegistry;
+  store?: Store;
 }
 
 const commandBody = z.object({
@@ -24,8 +28,9 @@ const commandBody = z.object({
 });
 
 const controlBody = z.object({
-  action: z.enum(["start", "stop", "skip-round"]),
+  action: z.enum(["start", "start-tournament", "stop", "skip-round"]),
   courseId: z.string().min(1).optional(),
+  tournamentId: z.string().min(1).optional(),
 });
 
 function identityFrom(req: FastifyRequest, config: AppConfig): ExtensionIdentity {
@@ -63,6 +68,21 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
 
   app.get("/courses", async () => ({ courses: courses.list() }));
 
+  app.get("/tournaments", async () => ({ tournaments: deps.tournaments?.list() ?? [] }));
+
+  app.get("/leaderboard", async (req: FastifyRequest, reply: FastifyReply) => {
+    const id = identityFrom(req, config);
+    return reply.send({ players: deps.store?.topPlayers(id.channelId, 20) ?? [] });
+  });
+
+  app.get("/stats", async (req: FastifyRequest, reply: FastifyReply) => {
+    const id = identityFrom(req, config);
+    const q = req.query as { user?: string };
+    const target = q.user ?? id.userId;
+    if (!target) return reply.send({ stats: null });
+    return reply.send({ stats: deps.store?.getPlayerStats(id.channelId, target) ?? null });
+  });
+
   app.get("/session", async (req: FastifyRequest, reply: FastifyReply) => {
     const id = identityFrom(req, config);
     const game = manager.get(id.channelId);
@@ -85,6 +105,12 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
 
     if (body.action === "start") {
       const result = manager.start(id.channelId, body.courseId ?? config.defaultCourseId);
+      return reply.code(result.ok ? 200 : 409).send(result);
+    }
+    if (body.action === "start-tournament") {
+      if (!body.tournamentId)
+        return reply.code(400).send({ ok: false, reason: "tournamentId required" });
+      const result = manager.startTournament(id.channelId, body.tournamentId);
       return reply.code(result.ok ? 200 : 409).send(result);
     }
     if (body.action === "stop") {

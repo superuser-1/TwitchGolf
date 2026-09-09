@@ -10,6 +10,8 @@ export interface HudInfo {
   strokes: number | null;
   secondsLeft: number | null;
   phase: string;
+  /** Optional one-line career summary for the identified viewer. */
+  career: string | null;
 }
 
 export interface ScorecardRow {
@@ -246,6 +248,8 @@ export class Renderer {
       this.ctx.fillRect(10, 46, w * frac, 6);
       this.text(10 + w + 6, 52, `${Math.ceil(hud.secondsLeft)}s`, 11, "left");
     }
+
+    if (hud.career) this.text(10, 66, hud.career, 10, "left");
   }
 
   private drawStandings(rows: StandingsRow[], cw: number, ch: number): void {

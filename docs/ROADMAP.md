@@ -151,16 +151,31 @@ player vs spectator views.
 
 **Done:** a full multi-hole course plays start to finish; results screen renders.
 
-## Phase 7 — Tournaments + stats
+## Phase 7 — Tournaments + stats ☑
 
-- ☐ Tournament model: roster lock, ordered courses, stroke-play aggregation.
-- ☐ SQLite store (`better-sqlite3`): players, stats, tournaments, finished
-  games, empty `paid_entry` ledger.
-- ☐ Stats accumulation on hole/game/tournament completion.
-- ☐ `standings` packet + live standings panel; per-player stats view.
+- ☑ `game/tournament.ts` — `TournamentRunner`: runs an ordered list of courses,
+  aggregates each course's per-player totals, broadcasts cumulative `standings`
+  after every course, then a final `standings` + `game-state:course-complete`.
+- ☑ `tournaments/*.json` (`weekly-open`, `practice-cup`) + `tournaments.ts`
+  registry; `GameManager.startTournament` + `POST /control {action:
+"start-tournament"}`.
+- ☑ `store/`: `Store` interface + `FileStore` (one JSON file, or in-memory when
+  no path) with `players` / `games` / `tournaments` / **`paidEntry`** (empty
+  ledger, ready for phase 10). `STORE_PATH` env. Note: swapped the SQLite dep
+  for a JSON file to avoid a native build; `Store` is the seam if SQLite is
+  wanted later.
+- ☑ `GolfGame` tracks aces + water hits and exposes `finalResults()`; the
+  manager records every finished game (standalone or tournament leg) to the
+  store; `TournamentRunner` records the tournament result (participation +
+  win).
+- ☑ `GET /stats` (self or `?user=`), `GET /leaderboard` (by strokes/hole),
+  `GET /tournaments`. Frontend shows a career line for identified players.
+- ☑ Tests: 4 `store` units + a full `practice-cup` tournament run via
+  `ManualClock` (aggregated standings `thru === 4`, `gamesPlayed === 2` per
+  player, one recorded tournament win, channel free afterwards). 159 total.
 
-**Done when:** a 2-course tournament produces correct live standings and
-persisted stats.
+**Done:** a 2-course tournament produces correct cumulative standings and
+persisted per-player stats.
 
 ## Phase 8 — Broadcaster surfaces
 

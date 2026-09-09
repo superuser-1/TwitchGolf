@@ -116,8 +116,10 @@ the **canonical** result; the client re-sims only to animate and then snaps.
 - `game/` — `GameManager` per channel: holds the authoritative state machine,
   owns the **round scheduler** (§5), calls `shared/physics`, emits broadcasts.
 - `twitch/` — JWT verify, PubSub publish (real or mock), later Bits verification.
-- `store/` — SQLite (`better-sqlite3`): players, stats, tournaments, finished
-  games, and an **(initially empty) paid-entry ledger**.
+- `store/` — persistent stats: players, stats, tournaments, finished games, and
+  an **(initially empty) paid-entry ledger**. Implemented as a `Store` interface
+  with a `FileStore` (single JSON file, or in-memory) backend; a SQLite backend
+  can slot in behind the interface later.
 - `entry/` — `EntryGate` interface. `FreeGate` (broadcaster/mods only) now;
   `BitsGate`, `ChannelPointsGate` later.
 

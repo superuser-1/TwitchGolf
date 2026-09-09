@@ -47,6 +47,30 @@ async function boot(): Promise<void> {
   await refetch();
   state.connected = true;
 
+  let career: string | null = null;
+  if (identity.userId) {
+    try {
+      const res = await fetch(`${cfg.ebsUrl}/stats`, {
+        headers: { authorization: `Bearer ${identity.token}` },
+      });
+      const body = (await res.json()) as {
+        stats: {
+          gamesPlayed: number;
+          holesPlayed: number;
+          totalStrokes: number;
+          holesInOne: number;
+        } | null;
+      };
+      const s = body.stats;
+      if (s && s.holesPlayed > 0) {
+        const avg = (s.totalStrokes / s.holesPlayed).toFixed(2);
+        career = `career: ${s.gamesPlayed} games · ${avg}/hole · ${s.holesInOne} ace${s.holesInOne === 1 ? "" : "s"}`;
+      }
+    } catch {
+      /* stats are optional */
+    }
+  }
+
   const animator = new Animator(
     (positions) => {
       for (const [id, p] of positions) animPositions.set(id, p);
@@ -85,6 +109,7 @@ async function boot(): Promise<void> {
         strokes: state.isPlayer && me ? me.strokes : null,
         secondsLeft,
         phase: state.phase,
+        career: state.isPlayer ? career : null,
       },
       standings: state.standings,
       showStandings:

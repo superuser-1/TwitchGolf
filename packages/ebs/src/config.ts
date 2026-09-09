@@ -25,6 +25,10 @@ const envSchema = z.object({
 
   DEFAULT_COURSE_ID: z.string().default("practice"),
   COURSES_DIR: z.string().default(""),
+  TOURNAMENTS_DIR: z.string().default(""),
+
+  /** JSON stats file. Empty string => in-memory only. */
+  STORE_PATH: z.string().default(""),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -40,6 +44,8 @@ export interface AppConfig {
   mockPubsubPort: number;
   defaultCourseId: string;
   coursesDir: string;
+  tournamentsDir: string;
+  storePath: string;
   timing: GameTimingConfig;
 }
 
@@ -64,6 +70,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     mockPubsubPort: e.MOCK_PUBSUB_PORT,
     defaultCourseId: e.DEFAULT_COURSE_ID,
     coursesDir: e.COURSES_DIR,
+    tournamentsDir: e.TOURNAMENTS_DIR,
+    storePath: e.STORE_PATH,
     timing: {
       roundSeconds: e.ROUND_SECONDS,
       maxRoundsPerHole: e.MAX_ROUNDS_PER_HOLE,

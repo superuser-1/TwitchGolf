@@ -42,6 +42,19 @@ interface BallState {
   sunk: boolean;
   /** Finalised strokes per completed hole; index === hole index. */
   holeScores: number[];
+  aces: number;
+  waterHits: number;
+}
+
+export interface PlayerFinalResult {
+  userId: string;
+  login: string;
+  name: string;
+  strokes: number;
+  holes: number;
+  toPar: number;
+  aces: number;
+  waterHits: number;
 }
 
 export interface SubmitResult {
@@ -130,6 +143,8 @@ export class GolfGame {
         strokes: 0,
         sunk: false,
         holeScores: [],
+        aces: 0,
+        waterHits: 0,
       };
       this.balls.set(userId, ball);
     } else {
@@ -271,9 +286,11 @@ export class GolfGame {
       ball.pos = { ...traj.final };
       if (traj.strokesAdded > 0) {
         ball.strokes += traj.strokesAdded;
+        ball.waterHits += traj.penalty;
         if (traj.sunk) {
           ball.sunk = true;
           ball.holeScores[this.holeIndex] = ball.strokes;
+          if (ball.strokes === 1) ball.aces += 1;
         }
         const swing = this.pending.get(ball.userId);
         resultBalls.push({
@@ -352,6 +369,32 @@ export class GolfGame {
     this.deps.broadcast({ t: "standings", v: PROTOCOL_VERSION, rows: this.standings() });
     this.emitGameState();
     this.deps.onFinished?.();
+  }
+
+  /** Per-player totals for the whole course; call once the game has finished. */
+  finalResults(): PlayerFinalResult[] {
+    const pars = this.deps.course.holes.map((h) => h.par);
+    return [...this.balls.values()].map((b) => {
+      let strokes = 0;
+      let holes = 0;
+      let parPlayed = 0;
+      b.holeScores.forEach((s, i) => {
+        if (s === undefined) return;
+        strokes += s;
+        holes += 1;
+        parPlayed += pars[i] ?? 0;
+      });
+      return {
+        userId: b.userId,
+        login: b.login,
+        name: b.name,
+        strokes,
+        holes,
+        toPar: strokes - parPlayed,
+        aces: b.aces,
+        waterHits: b.waterHits,
+      };
+    });
   }
 
   private standings(): StandingsRow[] {
