@@ -38,6 +38,7 @@ export class LocalChatSource implements ChatSource {
     const match = /^(\S+?)\s*:?\s+(!.*)$/.exec(trimmed);
     const login = match ? match[1]! : "local";
     const text = match ? match[2]! : trimmed;
+    const lower = login.toLowerCase();
 
     this.handler({
       channelId: this.opts.channelId,
@@ -45,6 +46,8 @@ export class LocalChatSource implements ChatSource {
       login,
       displayName: login,
       text,
+      isBroadcaster: lower === "broadcaster" || lower === "streamer",
+      isMod: lower.startsWith("mod"),
     });
   }
 

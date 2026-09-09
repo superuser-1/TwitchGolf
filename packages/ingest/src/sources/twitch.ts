@@ -31,12 +31,15 @@ export class TwitchChatSource implements ChatSource {
         const userId = tags["user-id"];
         const login = tags.username;
         if (!userId || !login) return;
+        const isBroadcaster = Boolean(tags.badges?.broadcaster) || tags["room-id"] === userId;
         this.handler({
           channelId: tags["room-id"] ?? this.opts.fallbackChannelId,
           userId,
           login,
           displayName: tags["display-name"] ?? login,
           text: message,
+          isMod: tags.mod === true || Boolean(tags.badges?.moderator),
+          isBroadcaster,
         });
       },
     );

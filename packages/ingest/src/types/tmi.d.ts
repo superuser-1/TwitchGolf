@@ -9,6 +9,8 @@ declare module "tmi.js" {
     username?: string;
     "display-name"?: string;
     "message-type"?: string;
+    mod?: boolean;
+    badges?: { broadcaster?: string; moderator?: string } | null;
   }
 
   export interface Options {

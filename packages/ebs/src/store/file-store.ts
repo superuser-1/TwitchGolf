@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 import type {
+  ChannelConfig,
   GameSummary,
   PaidEntry,
   PlayerGameResult,
@@ -15,12 +16,13 @@ interface DbShape {
   games: (GameSummary & { channelId: string })[];
   tournaments: (TournamentSummary & { channelId: string })[];
   paidEntry: PaidEntry[];
+  channelConfig: Record<string, ChannelConfig>;
 }
 
 const MAX_HISTORY = 500;
 
 function emptyDb(): DbShape {
-  return { players: {}, games: [], tournaments: [], paidEntry: [] };
+  return { players: {}, games: [], tournaments: [], paidEntry: [], channelConfig: {} };
 }
 
 /**
@@ -118,6 +120,15 @@ export class FileStore implements Store {
 
   recordPaidEntry(entry: PaidEntry): void {
     this.db.paidEntry.push(entry);
+    this.scheduleWrite();
+  }
+
+  getChannelConfig(channelId: string): ChannelConfig | null {
+    return this.db.channelConfig[channelId] ?? null;
+  }
+
+  setChannelConfig(channelId: string, config: ChannelConfig): void {
+    this.db.channelConfig[channelId] = config;
     this.scheduleWrite();
   }
 

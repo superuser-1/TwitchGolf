@@ -4,6 +4,8 @@ export interface ChatMessage {
   login: string;
   displayName: string;
   text: string;
+  isMod?: boolean;
+  isBroadcaster?: boolean;
 }
 
 export interface ChatSource {

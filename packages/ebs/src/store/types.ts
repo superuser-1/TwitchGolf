@@ -45,6 +45,12 @@ export interface TournamentSummary {
   standings: { userId: string; name: string; strokes: number; toPar: number; rank: number }[];
 }
 
+export interface ChannelConfig {
+  defaultCourseId: string;
+  roundSeconds: number;
+  maxRoundsPerHole: number;
+}
+
 export interface PaidEntry {
   channelId: string;
   userId: string;
@@ -60,6 +66,8 @@ export interface Store {
   getPlayerStats(channelId: string, userId: string): PlayerStats | null;
   topPlayers(channelId: string, limit: number): PlayerStats[];
   recordPaidEntry(entry: PaidEntry): void;
+  getChannelConfig(channelId: string): ChannelConfig | null;
+  setChannelConfig(channelId: string, config: ChannelConfig): void;
   /** Flush any pending writes (no-op for in-memory). */
   close(): Promise<void>;
 }

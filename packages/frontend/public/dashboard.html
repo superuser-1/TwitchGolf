@@ -9,17 +9,48 @@
       body {
         font-family: system-ui, sans-serif;
         margin: 16px;
+        color: #1b1b1b;
       }
-      pre {
-        background: #f1f3f5;
-        padding: 12px;
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 8px 0;
+        flex-wrap: wrap;
+      }
+      select {
+        padding: 6px 8px;
+        font-size: 14px;
+      }
+      button {
+        padding: 8px 12px;
+        border: 0;
         border-radius: 6px;
+        background: #9146ff;
+        color: #fff;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #495057;
+      }
+      #phase {
+        font-size: 13px;
+        color: #495057;
+        min-height: 18px;
+      }
+      #status {
+        font-size: 13px;
+        color: #2f9e44;
+        min-height: 18px;
       }
     </style>
   </head>
   <body>
     <h3>Twitch Golf — live dashboard</h3>
-    <pre id="out">loading…</pre>
+    <div id="phase">…</div>
+    <div id="app">loading…</div>
+    <div id="status"></div>
     <script src="./dashboard.js"></script>
   </body>
 </html>

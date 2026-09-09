@@ -40,6 +40,16 @@ export class GameManager {
     return c ? { id: c.id, name: c.name, holes: c.resolvedHoles } : null;
   }
 
+  private timingFor(channelId: string): GameTimingConfig {
+    const cfg = this.deps.store?.getChannelConfig(channelId);
+    if (!cfg) return this.deps.timing;
+    return {
+      ...this.deps.timing,
+      roundSeconds: cfg.roundSeconds,
+      maxRoundsPerHole: cfg.maxRoundsPerHole,
+    };
+  }
+
   private recordGame(
     channelId: string,
     courseId: string,
@@ -82,7 +92,7 @@ export class GameManager {
       channelId,
       course,
       clock: this.deps.clock,
-      timing: this.deps.timing,
+      timing: this.timingFor(channelId),
       broadcast: (msg: BroadcastMsg) => this.deps.broadcaster.broadcast(channelId, msg),
       onFinished: () => {
         this.recordGame(channelId, course.id, tournamentId, startedAt, game);
@@ -115,7 +125,7 @@ export class GameManager {
       channelId,
       def,
       clock: this.deps.clock,
-      timing: this.deps.timing,
+      timing: this.timingFor(channelId),
       broadcast: (msg: BroadcastMsg) => this.deps.broadcaster.broadcast(channelId, msg),
       resolveCourse: (id) => this.toActiveCourse(id),
       makeGame: (course, onGameFinished) => {

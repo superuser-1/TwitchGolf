@@ -177,15 +177,26 @@ player vs spectator views.
 **Done:** a 2-course tournament produces correct cumulative standings and
 persisted per-player stats.
 
-## Phase 8 — Broadcaster surfaces
+## Phase 8 — Broadcaster surfaces ☑
 
-- ☐ `config.html`: default course, round length, max strokes, tournament
-  presets; `GET/PUT /config`.
-- ☐ `dashboard.html`: start/stop, skip round, kick player, switch course.
-- ☐ `EntryGate` interface + `FreeGate` (broadcaster/mods) wired to `/control`
-  and to `!golf start` mod command.
+- ☑ `entry/gate.ts`: `EntryGate` interface + `FreeGate` (broadcaster/mods only).
+  Wired into `POST /control` and `POST /chat-control` (replaces the inline role
+  check); the seam for `BitsGate` / `ChannelPointsGate` in phase 10.
+- ☑ `GET/PUT /config` — per-channel `{ defaultCourseId, roundSeconds,
+maxRoundsPerHole }` persisted via `Store.get/setChannelConfig`; `GameManager`
+  applies the channel's round timing to new games/tournaments.
+- ☑ `POST /chat-control` (`x-ingest-secret`): ingest recognises `!golf
+start|stop|skip|tournament` from mods/broadcaster (`ControlPipeline`, tmi.js
+  badge/`mod` tags; local source infers from the login) and forwards them.
+- ☑ Real `config.html` (course picker + round length + cap, load/save) and
+  `dashboard.html` (start course / start tournament / skip / stop + live phase
+  poll). CORS widened to allow `PUT`.
+- ☑ Tests: 3 `FreeGate` + 8 `/config` & `/chat-control` (persist round-trip,
+  role gates, ingest-secret) + 5 `ControlPipeline` units. 175 total.
+  **Verified in a browser**: dashboard starts a game; config saves and persists.
 
-**Done when:** a broadcaster can configure and run games without touching code.
+**Done:** a broadcaster runs and configures games from the extension UI or from
+chat, no code needed.
 
 ## Phase 9 — Real Twitch integration
 

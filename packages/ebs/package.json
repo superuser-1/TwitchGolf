@@ -15,6 +15,7 @@
     "./game/tournament": "./src/game/tournament.ts",
     "./tournaments": "./src/tournaments.ts",
     "./store": "./src/store/index.ts",
+    "./entry/gate": "./src/entry/gate.ts",
     "./http/server": "./src/http/server.ts",
     "./twitch/jwt": "./src/twitch/jwt.ts",
     "./twitch/pubsub": "./src/twitch/pubsub.ts",

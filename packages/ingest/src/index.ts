@@ -1,4 +1,5 @@
 import { loadConfig } from "./config";
+import { ControlPipeline } from "./control-pipeline";
 import { createEbsClient } from "./ebs-client";
 import { CommandPipeline } from "./pipeline";
 import { LocalChatSource } from "./sources/local";
@@ -17,6 +18,11 @@ async function main(): Promise<void> {
     forward: (cmd) => ebs.postCommand(cmd),
     userRateMs: config.USER_RATE_MS,
   });
+  const control = new ControlPipeline({
+    forward: async (cmd) => {
+      await ebs.postControl(cmd);
+    },
+  });
 
   let source: ChatSource;
   if (config.SOURCE === "twitch") {
@@ -32,7 +38,10 @@ async function main(): Promise<void> {
     console.log(`[ingest] type e.g.  alice: !70, 50`);
   }
 
-  source.onMessage((msg) => void pipeline.handle(msg));
+  source.onMessage((msg) => {
+    if (ControlPipeline.isControlCommand(msg.text)) void control.handle(msg);
+    else void pipeline.handle(msg);
+  });
   await source.start();
 
   const shutdown = () => void source.stop().then(() => process.exit(0));
