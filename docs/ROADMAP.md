@@ -46,18 +46,26 @@ snapshot-pinned.
 > Note: the browser canvas play-test surface is folded into Phase 5 (needs the
 > frontend bundler); the terminal REPL covers Phase 1 physics tuning.
 
-## Phase 2 — Terrain
+## Phase 2 — Terrain ☑
 
-- ☐ `shared/shapes`: circle / rect / polygon `contains` + `segmentIntersect`.
-- ☐ Surfaces: sand (high decel), water (+1 stroke, drop at last land rest),
-  slope (accel vector).
-- ☐ Static walls (arbitrary segments) with restitution.
-- ☐ Deterministic moving obstacle (windmill) as a function of round number.
-- ☐ Per-surface / per-course physics overrides from course JSON.
-- ☐ Tests per surface + obstacle.
+- ☑ `shared/geom`: `shapeContains` (circle/rect/polygon, even-odd raycast),
+  `segmentIntersection`, `closestPointOnSegment`, `segmentNormal`.
+- ☑ `physics/terrain.ts`: `surfaceAt` (later region wins), `slopeAccelAt`
+  (summed over overlapping slopes).
+- ☑ Surfaces in the sim: sand/green/water deceleration, water = +1 stroke and
+  drop at the shot origin, slope = per-step acceleration (with a slope-stuck
+  break guard).
+- ☑ Interior walls: nearest-contact reflection with restitution, crossing +
+  ball-radius proximity tests, skin offset.
+- ☑ `physics/obstacles.ts`: `windmillBlade` — a rotating diameter segment that
+  reflects like a wall; orientation is a pure function of sim time + a
+  per-round phase offset (`ROUND_PHASE_OFFSET`).
+- ☑ `water` added to per-hole `decel` overrides in the course schema + config.
+- ☑ Tests: geom units, `surfaceAt`/`slopeAccelAt`/`windmillBlade`, and
+  integrated sand / water / slope / wall / windmill sim behaviour. 113 total.
 
-**Done when:** `course-preview` can play a hole with sand, water, a slope, a
-wall and a windmill.
+**Done:** the sim resolves every terrain type; `course-preview` can play
+`practice-2` (sand + water + slope + walls + windmill).
 
 ## Phase 3 — EBS core
 

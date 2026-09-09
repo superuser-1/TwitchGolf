@@ -80,6 +80,7 @@ export const holePhysicsSchema = z
         fairway: z.number().positive().optional(),
         green: z.number().positive().optional(),
         sand: z.number().positive().optional(),
+        water: z.number().positive().optional(),
       })
       .optional(),
   })

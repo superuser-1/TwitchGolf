@@ -1,10 +1,23 @@
-import type { Hole } from "../course/schema";
+import type { HolePhysics, Obstacle, Surface, Wall } from "../course/schema";
 import type { BallId } from "../model/ids";
 import type { Vec2 } from "../model/vec";
 import type { PhysicsConstants } from "./config";
 import { resolvePhysics } from "./config";
 import { simulateShot } from "./engine";
 import type { SimEvent, SimField } from "./engine";
+
+/** Windmill phase (radians) added per round so hazards aren't identical every round. */
+export const ROUND_PHASE_OFFSET = 0.7;
+
+/** The subset of a hole the sim needs. A full `Hole` satisfies this. */
+export interface SimHoleInput {
+  size: { w: number; h: number };
+  cup: { x: number; y: number; radius: number };
+  physics?: HolePhysics;
+  surfaces?: Surface[];
+  walls?: Wall[];
+  obstacles?: Obstacle[];
+}
 
 /** One ball's state entering a round. */
 export interface RoundBallInput {
@@ -24,8 +37,10 @@ export interface BallTrajectory {
   path: Vec2[];
   final: Vec2;
   sunk: boolean;
+  water: boolean;
   /** Strokes added this round (swing + any penalties). */
   strokesAdded: number;
+  /** Penalty strokes included in `strokesAdded`. */
   penalty: number;
   events: SimEvent[];
 }
@@ -35,13 +50,30 @@ export interface RoundSimResult {
   balls: BallTrajectory[];
 }
 
-export function fieldFromHole(hole: Pick<Hole, "size" | "cup">): SimField {
-  return { w: hole.size.w, h: hole.size.h, cup: { ...hole.cup } };
+export function fieldFromHole(hole: SimHoleInput): SimField {
+  return {
+    w: hole.size.w,
+    h: hole.size.h,
+    cup: { ...hole.cup },
+    surfaces: hole.surfaces,
+    walls: hole.walls,
+    obstacles: hole.obstacles,
+  };
 }
 
 function passthrough(id: BallId, position: Vec2, sunk: boolean): BallTrajectory {
   const p: Vec2 = { x: position.x, y: position.y };
-  return { id, from: p, path: [p], final: p, sunk, strokesAdded: 0, penalty: 0, events: [] };
+  return {
+    id,
+    from: p,
+    path: [p],
+    final: p,
+    sunk,
+    water: false,
+    strokesAdded: 0,
+    penalty: 0,
+    events: [],
+  };
 }
 
 /**
@@ -52,13 +84,14 @@ function passthrough(id: BallId, position: Vec2, sunk: boolean): BallTrajectory 
  * across processes should pass a stable order (e.g. sorted by ball id).
  */
 export function simulateRound(
-  hole: Pick<Hole, "size" | "cup" | "physics">,
+  hole: SimHoleInput,
   inputs: RoundBallInput[],
   roundNumber: number,
   physics?: PhysicsConstants,
 ): RoundSimResult {
   const k = physics ?? resolvePhysics(hole.physics);
   const field = fieldFromHole(hole);
+  const obstaclePhase = roundNumber * ROUND_PHASE_OFFSET;
 
   const balls = inputs.map((input): BallTrajectory => {
     if (input.sunk) return passthrough(input.id, input.position, true);
@@ -68,6 +101,7 @@ export function simulateRound(
       field,
       { from: input.position, angle: input.swing.angle, power: input.swing.power },
       k,
+      { obstaclePhase },
     );
     return {
       id: input.id,
@@ -75,8 +109,9 @@ export function simulateRound(
       path: shot.path,
       final: shot.final,
       sunk: shot.sunk,
-      strokesAdded: 1,
-      penalty: 0,
+      water: shot.water,
+      strokesAdded: 1 + shot.penalty,
+      penalty: shot.penalty,
       events: shot.events,
     };
   });

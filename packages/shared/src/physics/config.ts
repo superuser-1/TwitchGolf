@@ -19,8 +19,8 @@ export interface PhysicsConstants {
   restitution: number;
   /** Speed multiplier applied when a ball lips out of the cup (1 = no effect). */
   lipOutDamping: number;
-  /** Constant deceleration per surface (units/s^2). Phase 1 uses `fairway` only. */
-  decel: { fairway: number; green: number; sand: number };
+  /** Constant deceleration per surface (units/s^2). */
+  decel: { fairway: number; green: number; sand: number; water: number };
   /** Safety cap on simulation steps per shot. */
   maxSteps: number;
   /** Record a path sample every N steps (first, last and event points always kept). */
@@ -35,7 +35,7 @@ export const DEFAULT_PHYSICS: PhysicsConstants = Object.freeze({
   captureSpeed: 20,
   restitution: 0.7,
   lipOutDamping: 1,
-  decel: Object.freeze({ fairway: 22, green: 12, sand: 70 }),
+  decel: Object.freeze({ fairway: 22, green: 12, sand: 70, water: 90 }),
   maxSteps: 60 * 30,
   pathSampleEvery: 2,
 }) as PhysicsConstants;
@@ -50,6 +50,7 @@ export function resolvePhysics(overrides?: HolePhysics): PhysicsConstants {
       fairway: overrides.decel?.fairway ?? DEFAULT_PHYSICS.decel.fairway,
       green: overrides.decel?.green ?? DEFAULT_PHYSICS.decel.green,
       sand: overrides.decel?.sand ?? DEFAULT_PHYSICS.decel.sand,
+      water: overrides.decel?.water ?? DEFAULT_PHYSICS.decel.water,
     },
   };
 }

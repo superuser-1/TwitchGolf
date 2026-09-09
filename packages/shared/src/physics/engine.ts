@@ -1,7 +1,12 @@
+import type { Obstacle, Surface, SurfaceType, Wall } from "../course/schema";
+import { closestPointOnSegment, segmentIntersection, segmentNormal } from "../geom/segments";
+import type { Segment } from "../geom/segments";
 import type { Vec2 } from "../model/vec";
 import type { PhysicsConstants } from "./config";
+import { obstacleSegments } from "./obstacles";
+import { slopeAccelAt, surfaceAt } from "./terrain";
 
-export type SimEventType = "bounce" | "sink" | "lip-out" | "rest";
+export type SimEventType = "bounce" | "wall" | "obstacle" | "sink" | "lip-out" | "rest";
 
 export interface SimEvent {
   type: SimEventType;
@@ -10,11 +15,13 @@ export interface SimEvent {
   step: number;
 }
 
-/** Flat rectangular field with a cup. Phase 1: no interior walls / terrain. */
 export interface SimField {
   w: number;
   h: number;
   cup: { x: number; y: number; radius: number };
+  surfaces?: Surface[];
+  walls?: Wall[];
+  obstacles?: Obstacle[];
 }
 
 export interface ShotInput {
@@ -25,25 +32,50 @@ export interface ShotInput {
   power: number;
 }
 
+export interface ShotOptions {
+  /** Extra phase (radians) added to every obstacle; usually round-number derived. */
+  obstaclePhase?: number;
+}
+
 export interface ShotResult {
   from: Vec2;
   /** Sampled points for animation, including the start and the resting point. */
   path: Vec2[];
+  /** Where the ball ends up for scoring — the drop point if it finished in water. */
   final: Vec2;
   sunk: boolean;
+  /** True if the ball came to rest in a water hazard. */
+  water: boolean;
+  /** Penalty strokes incurred this shot (water = 1). */
+  penalty: number;
   events: SimEvent[];
   /** Steps simulated. */
   steps: number;
 }
 
 const DEG2RAD = Math.PI / 180;
+const SKIN = 0.01;
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 
+function decelFor(surface: SurfaceType, k: PhysicsConstants): number {
+  switch (surface) {
+    case "sand":
+      return k.decel.sand;
+    case "green":
+      return k.decel.green;
+    case "water":
+      return k.decel.water;
+    case "fairway":
+    case "slope":
+      return k.decel.fairway;
+  }
+}
+
 /**
  * Initial velocity for a swing. This is the only place `Math.sin`/`Math.cos`
- * are used; the rest of the sim is +,-,*,/,sqrt, which is IEEE-754 identical
- * across platforms. See the determinism note in `docs/DESIGN.md` §3.1.
+ * touch a ball's path (windmill blades aside); the rest of the sim is
+ * +,-,*,/,sqrt, which is IEEE-754 identical across platforms.
  */
 export function initialVelocity(angle: number, power: number, k: PhysicsConstants): Vec2 {
   const rad = angle * DEG2RAD;
@@ -60,16 +92,73 @@ export function pointSegmentDistance(
   bx: number,
   by: number,
 ): number {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const len2 = abx * abx + aby * aby;
-  if (len2 === 0) return Math.hypot(px - ax, py - ay);
-  const t = clamp(((px - ax) * abx + (py - ay) * aby) / len2, 0, 1);
-  return Math.hypot(px - (ax + t * abx), py - (ay + t * aby));
+  return closestPointOnSegment(px, py, ax, ay, bx, by).dist;
+}
+
+interface BarrierContact {
+  t: number;
+  nx: number;
+  ny: number;
+  x: number;
+  y: number;
+  kind: "wall" | "obstacle";
+}
+
+/** Reflect a ball crossing / grazing one of `barriers`; nearest contact wins. */
+function resolveBarriers(
+  px: number,
+  py: number,
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  barriers: { seg: Segment; kind: "wall" | "obstacle" }[],
+  r: number,
+  restitution: number,
+): { x: number; y: number; vx: number; vy: number; hit: BarrierContact | null } {
+  let best: BarrierContact | null = null;
+
+  for (const { seg, kind } of barriers) {
+    const cross = segmentIntersection(px, py, x, y, seg.x1, seg.y1, seg.x2, seg.y2);
+    if (cross) {
+      const n = segmentNormal(seg);
+      if (!best || cross.t < best.t) {
+        best = { t: cross.t, nx: n.nx, ny: n.ny, x: cross.x, y: cross.y, kind };
+      }
+      continue;
+    }
+    const cp = closestPointOnSegment(x, y, seg.x1, seg.y1, seg.x2, seg.y2);
+    if (cp.dist < r && (!best || best.t > 0)) {
+      const len = cp.dist === 0 ? 1 : cp.dist;
+      best = { t: 0, nx: (x - cp.x) / len, ny: (y - cp.y) / len, x: cp.x, y: cp.y, kind };
+    }
+  }
+
+  if (!best) return { x, y, vx, vy, hit: null };
+
+  let nx = best.nx;
+  let ny = best.ny;
+  if (vx * nx + vy * ny > 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const dot = vx * nx + vy * ny;
+  return {
+    x: best.x + nx * (r + SKIN),
+    y: best.y + ny * (r + SKIN),
+    vx: (vx - 2 * dot * nx) * restitution,
+    vy: (vy - 2 * dot * ny) * restitution,
+    hit: best,
+  };
 }
 
 /** Simulate a single ball from `shot.from` until it rests or is sunk. Pure. */
-export function simulateShot(field: SimField, shot: ShotInput, k: PhysicsConstants): ShotResult {
+export function simulateShot(
+  field: SimField,
+  shot: ShotInput,
+  k: PhysicsConstants,
+  opts: ShotOptions = {},
+): ShotResult {
   const from: Vec2 = { x: shot.from.x, y: shot.from.y };
   let x = from.x;
   let y = from.y;
@@ -83,25 +172,65 @@ export function simulateShot(field: SimField, shot: ShotInput, k: PhysicsConstan
   const maxX = field.w - r;
   const maxY = field.h - r;
 
+  const wallBarriers = (field.walls ?? []).map((seg) => ({ seg, kind: "wall" as const }));
+  const hasObstacles = (field.obstacles?.length ?? 0) > 0;
+  const obstaclePhase = opts.obstaclePhase ?? 0;
+
   const path: Vec2[] = [{ x, y }];
   const events: SimEvent[] = [];
   let sunk = false;
   let step = 0;
+  let stuckOnSlope = 0;
 
   for (; step < k.maxSteps; step++) {
-    const speed = Math.hypot(vx, vy);
-    if (speed <= k.restSpeed) break;
+    const slope = slopeAccelAt(field.surfaces, x, y);
+    const onSlope = slope.x !== 0 || slope.y !== 0;
+    if (onSlope) {
+      vx += slope.x * k.dt;
+      vy += slope.y * k.dt;
+    }
 
-    // Constant deceleration (fairway everywhere in phase 1).
-    const newSpeed = Math.max(0, speed - k.decel.fairway * k.dt);
-    const fr = newSpeed / speed;
-    vx *= fr;
-    vy *= fr;
+    const speed = Math.hypot(vx, vy);
+    if (speed <= k.restSpeed) {
+      if (!onSlope) break;
+      if (++stuckOnSlope > 12) break;
+    } else {
+      stuckOnSlope = 0;
+    }
+
+    if (speed > 0) {
+      const surface = surfaceAt(field.surfaces, x, y);
+      const newSpeed = Math.max(0, speed - decelFor(surface, k) * k.dt);
+      const fr = newSpeed / speed;
+      vx *= fr;
+      vy *= fr;
+    }
 
     const px = x;
     const py = y;
     x += vx * k.dt;
     y += vy * k.dt;
+
+    // Walls + moving obstacles.
+    if (wallBarriers.length > 0 || hasObstacles) {
+      const barriers = hasObstacles
+        ? [
+            ...wallBarriers,
+            ...obstacleSegments(field.obstacles, step * k.dt, obstaclePhase).map((seg) => ({
+              seg,
+              kind: "obstacle" as const,
+            })),
+          ]
+        : wallBarriers;
+      const b = resolveBarriers(px, py, x, y, vx, vy, barriers, r, k.restitution);
+      if (b.hit) {
+        x = clamp(b.x, minX, maxX);
+        y = clamp(b.y, minY, maxY);
+        vx = b.vx;
+        vy = b.vy;
+        events.push({ type: b.hit.kind, at: { x, y }, step });
+      }
+    }
 
     // Field-edge bounce.
     let bounced = false;
@@ -150,11 +279,20 @@ export function simulateShot(field: SimField, shot: ShotInput, k: PhysicsConstan
     if (step % k.pathSampleEvery === 0) path.push({ x, y });
   }
 
-  if (!sunk) events.push({ type: "rest", at: { x, y }, step });
+  const restPoint: Vec2 = { x, y };
+  if (!sunk) events.push({ type: "rest", at: restPoint, step });
 
-  const final: Vec2 = { x, y };
   const last = path[path.length - 1];
-  if (!last || last.x !== final.x || last.y !== final.y) path.push({ x, y });
+  if (!last || last.x !== restPoint.x || last.y !== restPoint.y) path.push({ ...restPoint });
 
-  return { from, path, final, sunk, events, steps: step };
+  let water = false;
+  let penalty = 0;
+  let final: Vec2 = restPoint;
+  if (!sunk && surfaceAt(field.surfaces, restPoint.x, restPoint.y) === "water") {
+    water = true;
+    penalty = 1;
+    final = { x: from.x, y: from.y };
+  }
+
+  return { from, path, final, sunk, water, penalty, events, steps: step };
 }
