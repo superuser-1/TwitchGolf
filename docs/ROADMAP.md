@@ -67,19 +67,29 @@ snapshot-pinned.
 **Done:** the sim resolves every terrain type; `course-preview` can play
 `practice-2` (sand + water + slope + walls + windmill).
 
-## Phase 3 — EBS core
+## Phase 3 — EBS core ☑
 
-- ☐ Fastify app; Twitch JWT verify middleware (shared Extension secret).
-- ☐ `GameManager` per channel + authoritative state machine.
-- ☐ Round scheduler: `round-open` → collect (last-valid-wins) → resolve →
-  `round-result`; per-hole cap + auto-score; AFK-safe advance.
-- ☐ `POST /command` (from ingest, shared-secret auth).
-- ☐ `GET /session`, `POST /control` (start/stop/skip; role check).
-- ☐ Mock PubSub: `TWITCH_MOCK=1` broadcasts over a local WebSocket.
-- ☐ Scheduler tests (post-close ignored, no-submit, cap, all-sunk).
+- ☑ `packages/ebs` (Fastify 5). `GET /health`, `GET /courses`, `GET /session`
+  (JWT), `POST /control` (JWT + broadcaster/mod role), `POST /command`
+  (`x-ingest-secret`).
+- ☑ `twitch/jwt.ts`: `verifyExtensionJwt` (base64 HS256) + dev-token fallback in
+  mock mode; `makeDevToken` for local testing.
+- ☑ `GameManager` (one `GolfGame` per channel) + course registry loaded from
+  `courses/`.
+- ☑ `GolfGame` state machine + scheduler: `idle → hole-intro → round-open →
+round-resolving → hole-complete → course-complete`. Last-valid-swing wins,
+  no-submit = no stroke, per-hole round cap with cap-scoring, AFK-safe advance,
+  empty-game re-open with a limit, live standings.
+- ☑ `clock.ts`: `Clock` interface + `systemClock` + `ManualClock` (tests drive
+  time deterministically).
+- ☑ `twitch/pubsub.ts`: `Broadcaster` interface, `MockPubSub` (ws server the
+  frontend connects to, `?channel=` filter), `NoopBroadcaster`.
+- ☑ Tests: 12 scheduler cases (lifecycle, last-wins, post-close ignore, cap,
+  AFK, skip, empty game, full 2-hole course + standings) + 10 HTTP cases via
+  `fastify.inject`. EBS boots in mock mode and serves `/health` + `/courses`.
 
-**Done when:** a scripted set of `/command` calls drives a full single hole and
-emits correct broadcasts over the mock WS.
+**Done:** a scripted round drives a full hole and emits the correct broadcast
+sequence; HTTP surface enforces auth + roles.
 
 ## Phase 4 — Ingest
 
