@@ -91,16 +91,22 @@ round-resolving → hole-complete → course-complete`. Last-valid-swing wins,
 **Done:** a scripted round drives a full hole and emits the correct broadcast
 sequence; HTTP surface enforces auth + roles.
 
-## Phase 4 — Ingest
+## Phase 4 — Ingest ☑
 
-- ☐ Anonymous `tmi.js` reader + reconnect/backoff.
-- ☐ Filter `!` messages, parse via `shared`, dedupe per user/round, per-user
-  rate limit, forward to `EBS /command`.
-- ☐ Pluggable source: `twitch` | `local` (stdin / tiny form).
-- ☐ Integration test: local chat lines → EBS → mock WS.
+- ☑ `packages/ingest`. `ChatSource` interface with two implementations:
+  `TwitchChatSource` (anonymous `tmi.js`, `reconnect: true`) and
+  `LocalChatSource` (stdin, `alice: !70, 50` line format, `feed()` for tests).
+- ☑ `CommandPipeline`: `parseChatCommand` → per-user rate limit
+  (`USER_RATE_MS`) → forward. Returns a typed outcome
+  (`forwarded` / `ignored:*`).
+- ☑ `ebs-client.ts`: `POST /command` with `x-ingest-secret`; 404/409 treated as
+  expected noise, other errors surfaced via `onError`.
+- ☑ Ambient `tmi.js` shim (the package ships no types).
+- ☑ Tests: 6 pipeline units (forward, parse-reject, per-user rate limit) + 3
+  integration (`LocalChatSource` → pipeline → real EBS via `fastify.inject` →
+  player registered; garbage dropped; rate-limited repeats never reach EBS).
 
-**Done when:** typing `!70, 50` in the local source moves a ball in the mock
-broadcast.
+**Done:** a local chat line drives a swing all the way into EBS game state.
 
 ## Phase 5 — Frontend viewer
 

@@ -5,6 +5,18 @@
   "type": "module",
   "description": "Extension Backend Service: authoritative game state, round scheduler, JWT auth, broadcast.",
   "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./clock": "./src/clock.ts",
+    "./config": "./src/config.ts",
+    "./courses": "./src/courses.ts",
+    "./game/game": "./src/game/game.ts",
+    "./game/manager": "./src/game/manager.ts",
+    "./http/server": "./src/http/server.ts",
+    "./twitch/jwt": "./src/twitch/jwt.ts",
+    "./twitch/pubsub": "./src/twitch/pubsub.ts",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
