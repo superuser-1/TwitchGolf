@@ -17,6 +17,8 @@ export interface ClientState {
   hasIdentity: boolean;
   isPlayer: boolean;
   myBallId: number | null;
+  /** Broadcaster allows drag-to-aim on the overlay. */
+  allowDrag: boolean;
 
   phase: string;
   holeIndex: number;
@@ -42,6 +44,7 @@ export function initialState(): ClientState {
     hasIdentity: false,
     isPlayer: false,
     myBallId: null,
+    allowDrag: true,
     phase: "idle",
     holeIndex: 0,
     holeCount: 0,
@@ -76,6 +79,7 @@ export function applySession(state: ClientState, session: SessionResponse): Clie
     hasIdentity: session.hasIdentity,
     isPlayer: session.isPlayer,
     myBallId: session.myBallId,
+    allowDrag: session.allowDragInput ?? true,
   };
   const game = session.game as GameSnapshot | null;
   if (!game) {

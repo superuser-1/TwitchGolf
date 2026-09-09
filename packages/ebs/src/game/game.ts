@@ -148,8 +148,9 @@ export class GolfGame {
       };
       this.balls.set(userId, ball);
     } else {
-      ball.login = login;
-      ball.name = name;
+      if (login && login !== userId) ball.login = login;
+      // Don't clobber a real display name with a userId placeholder (drag swings).
+      if (name && name !== userId) ball.name = name;
     }
     if (ball.sunk) return { ok: false, reason: "already-sunk" };
 

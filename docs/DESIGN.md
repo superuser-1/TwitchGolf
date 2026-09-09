@@ -19,13 +19,22 @@ Source of truth for the original brief:
   portrait rectangle (~2:3), matching the mockup.
 - **Who plays:** any viewer in chat. A round-based game; anyone can join an open
   game by taking a swing.
-- **Input:** chat command `!<degrees>°, <power>` — e.g. `!70°, 50` = hit toward
-  70°, at 50% power. Degree symbol optional; separators flexible (see §6).
+- **Input:**
+  - chat command `!<degrees>°, <power>` — e.g. `!70°, 50` (see §6); works for
+    anyone, no identity grant, works on mobile.
+  - **drag-to-aim** on the overlay (identified players, desktop): slingshot —
+    pull away from your ball, release; the ball flies opposite the pull, drag
+    distance = power. Submitted straight to the EBS over the viewer's JWT
+    (`POST /swing`), same authoritative round as chat (last valid wins). A live
+    predicted-trajectory arc (re-runs the deterministic sim, so it curves with
+    wind/terrain) shows while dragging. Broadcaster toggle `allowDragInput`
+    (default on).
 - **Compass:** `0°/360°` = up (−Y), `90°` = right (+X), `180°` = down, `270°` =
   left. Clockwise from north. → `vx = sin θ`, `vy = −cos θ`.
 - **Physics feel:** ball rolls and decelerates, bounces off field edges and
-  walls, is slowed by sand, penalised by water, pushed by slopes. Sinks when it
-  reaches the hole slowly enough (else it "lips out").
+  walls, is slowed by sand, penalised by water, pushed by slopes, and drifts
+  with per-hole **wind**. Sinks when it reaches the hole slowly enough (else it
+  "lips out").
 - **Views:**
   - _Player_ (has a ball in the active game, identity granted): sees **only their
     own ball**, an aim compass centred on it, their stroke count.
@@ -171,6 +180,13 @@ the **canonical** result; the client re-sims only to animate and then snaps.
 - Water: ball coming to rest inside a water shape → **+1 stroke penalty**, drop
   at the last on-land resting position (standard casual rule).
 - Slope: while the ball is over a slope shape, add its `accel` vector each step.
+- **Wind** (optional per hole: `{ angle, power }`): a constant acceleration in
+  the wind direction, added every step **while the ball is moving** (a ball at
+  rest is not blown away). Magnitude `= windScale * power / 100` (`windScale`
+  default 3, per-hole overridable via `physics.windScale`). Because it acts over
+  the whole flight, total drift scales ~`power²` — a max drive is pushed ~8
+  units per 100 `wind.power`, a putt barely moves, so players compensate on big
+  shots. Only `Math.sin/cos` (once, for the wind vector) — stays engine-portable.
 - Moving obstacles: position is a pure function of round number + phase (e.g.
   windmill blade angle `= 2π * (round * roundDuration + t) / period + phase`), so
   client re-sim matches server exactly.

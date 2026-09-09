@@ -2,7 +2,9 @@ import type { BroadcastMsg, Vec2 } from "@twitch-golf/shared";
 
 import { Animator } from "./anim";
 import { readRuntimeConfig } from "./config";
-import { connectNet, fetchSession } from "./net";
+import { attachDragInput } from "./input";
+import type { DragAim } from "./input";
+import { connectNet, fetchSession, submitSwing } from "./net";
 import { Renderer } from "./render/canvas";
 import type { RenderView } from "./render/canvas";
 import {
@@ -87,6 +89,44 @@ async function boot(): Promise<void> {
   const net = connectNet(cfg, identity, onMessage);
   window.addEventListener("beforeunload", () => net.close());
 
+  const status = document.getElementById("status");
+  const setStatus = (s: string) => {
+    if (status) status.textContent = s;
+  };
+
+  let currentAim: DragAim | null = null;
+  const detachDrag = attachDragInput(canvas, {
+    getContext: () => {
+      const mb = state.myBallId !== null ? state.balls.get(state.myBallId) : undefined;
+      // A player who hasn't swung yet has no ball — let them aim from the tee.
+      const myBall = mb
+        ? { x: mb.x, y: mb.y }
+        : state.hole
+          ? { x: state.hole.tee.x, y: state.hole.tee.y }
+          : null;
+      return {
+        phase: state.phase,
+        hasIdentity: state.hasIdentity,
+        allowDrag: state.allowDrag,
+        hole: state.hole,
+        myBall,
+        hasBall: Boolean(mb),
+        roundNumber: state.roundNumber,
+      };
+    },
+    toField: (x, y) => renderer.toField(x, y),
+    onAim: (aim) => {
+      currentAim = aim;
+    },
+    onSubmit: (swing) => {
+      setStatus(`swing sent: ${Math.round(swing.angle)}° @ ${swing.power}`);
+      void submitSwing(cfg, identity, swing).then((r) => {
+        if (!r.ok) setStatus(`swing rejected: ${r.reason ?? r.status}`);
+      });
+    },
+  });
+  window.addEventListener("beforeunload", detachDrag);
+
   const frame = () => {
     const now = Date.now();
     const balls = visibleBalls(state, now).map((b) => {
@@ -122,6 +162,15 @@ async function boot(): Promise<void> {
         perHole: state.scorecard.get(s.id) ?? [],
       })),
       showResults: state.phase === "course-complete",
+      aim: state.phase === "round-open" ? currentAim : null,
+      teeHint:
+        state.hasIdentity &&
+        state.allowDrag &&
+        state.phase === "round-open" &&
+        state.myBallId === null &&
+        state.hole
+          ? { x: state.hole.tee.x, y: state.hole.tee.y }
+          : null,
     };
     renderer.draw(view);
     requestAnimationFrame(frame);

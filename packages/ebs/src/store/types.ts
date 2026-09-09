@@ -49,6 +49,8 @@ export interface ChannelConfig {
   defaultCourseId: string;
   roundSeconds: number;
   maxRoundsPerHole: number;
+  /** Allow drag-to-aim input on the video overlay (chat always works). */
+  allowDragInput: boolean;
 }
 
 export interface PaidEntry {

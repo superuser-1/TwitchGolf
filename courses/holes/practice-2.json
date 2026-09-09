@@ -5,6 +5,7 @@
   "par": 3,
   "tee": { "x": 20, "y": 135 },
   "cup": { "x": 80, "y": 25, "radius": 2.4 },
+  "wind": { "angle": 45, "power": 60 },
   "surfaces": [
     { "type": "sand", "shape": { "kind": "circle", "x": 50, "y": 80, "r": 14 } },
     { "type": "water", "shape": { "kind": "rect", "x": 0, "y": 45, "w": 40, "h": 10 } },

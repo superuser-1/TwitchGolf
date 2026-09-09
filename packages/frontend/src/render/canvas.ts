@@ -1,7 +1,16 @@
-import type { Hole, Shape, StandingsRow } from "@twitch-golf/shared";
+import type { Hole, Shape, StandingsRow, Vec2 } from "@twitch-golf/shared";
 
 import type { ClientBall } from "../state";
 import { COLORS, surfaceColor } from "./colors";
+
+export interface AimView {
+  from: Vec2;
+  to: Vec2;
+  /** Predicted trajectory (field units). */
+  path: Vec2[];
+  power: number;
+  angle: number;
+}
 
 export interface HudInfo {
   holeIndex: number;
@@ -33,6 +42,10 @@ export interface RenderView {
   holeCount: number;
   scorecard: ScorecardRow[];
   showResults: boolean;
+  /** Live drag-to-aim overlay while a player is pulling back. */
+  aim?: AimView | null;
+  /** Marker at the tee for an identified player who hasn't swung yet. */
+  teeHint?: Vec2 | null;
 }
 
 /** Maps logical field units to letterboxed canvas pixels. */
@@ -44,11 +57,20 @@ interface Fit {
 
 export class Renderer {
   private readonly ctx: CanvasRenderingContext2D;
+  /** Last field→pixel transform, for `toField()` (pointer input). */
+  private lastFit: Fit | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("no 2d context");
     this.ctx = ctx;
+  }
+
+  /** Canvas CSS pixels → field units (inverse of the last `draw()` transform). */
+  toField(cssX: number, cssY: number): Vec2 | null {
+    const f = this.lastFit;
+    if (!f) return null;
+    return { x: (cssX - f.ox) / f.scale, y: (cssY - f.oy) / f.scale };
   }
 
   resize(): void {
@@ -83,6 +105,7 @@ export class Renderer {
 
     const hole = view.hole;
     const f = this.fit(hole);
+    this.lastFit = f;
     const px = (x: number) => f.ox + x * f.scale;
     const py = (y: number) => f.oy + y * f.scale;
     const ps = (n: number) => n * f.scale;
@@ -152,9 +175,91 @@ export class Renderer {
       if (me) this.drawCompass(px(me.x), py(me.y), Math.max(26, ps(16)));
     }
 
+    if (view.teeHint && !view.aim) {
+      const tx = px(view.teeHint.x);
+      const ty = py(view.teeHint.y);
+      ctx.strokeStyle = COLORS.myBallRing;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.arc(tx, ty, ballR + 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      this.text(tx + ballR + 6, ty + 3, "drag to aim", 10, "left");
+    }
+
+    if (view.aim) this.drawAim(view.aim, px, py);
+    if (hole.wind && hole.wind.power > 0) this.drawWind(hole.wind, cw);
+
     this.drawHud(view.hud, cw);
     if (view.showStandings && !view.showResults) this.drawStandings(view.standings, cw, ch);
     if (view.showResults) this.drawResults(view, cw, ch);
+  }
+
+  private drawAim(aim: AimView, px: (n: number) => number, py: (n: number) => number): void {
+    const { ctx } = this;
+    // pull-back line
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(px(aim.from.x), py(aim.from.y));
+    ctx.lineTo(px(aim.to.x), py(aim.to.y));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // predicted trajectory
+    ctx.strokeStyle = COLORS.myBallRing;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    aim.path.forEach((p, i) => {
+      const X = px(p.x);
+      const Y = py(p.y);
+      if (i === 0) ctx.moveTo(X, Y);
+      else ctx.lineTo(X, Y);
+    });
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    this.text(
+      px(aim.from.x) + 10,
+      py(aim.from.y) - 8,
+      `${Math.round(aim.angle)}° · ${aim.power}`,
+      11,
+      "left",
+    );
+  }
+
+  private drawWind(wind: { angle: number; power: number }, cw: number): void {
+    const { ctx } = this;
+    const cx = cw - 34;
+    const cy = 78;
+    const rad = (wind.angle * Math.PI) / 180;
+    const dx = Math.sin(rad);
+    const dy = -Math.cos(rad);
+    const len = 10 + (wind.power / 100) * 14;
+
+    ctx.strokeStyle = COLORS.compass;
+    ctx.fillStyle = COLORS.compass;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+    ctx.globalAlpha = 0.25;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - dx * len, cy - dy * len);
+    ctx.lineTo(cx + dx * len, cy + dy * len);
+    ctx.stroke();
+    // arrowhead
+    const ax = cx + dx * len;
+    const ay = cy + dy * len;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - dx * 5 - dy * 3.5, ay - dy * 5 + dx * 3.5);
+    ctx.lineTo(ax - dx * 5 + dy * 3.5, ay - dy * 5 - dx * 3.5);
+    ctx.closePath();
+    ctx.fill();
+    this.text(cx, cy + 30, `wind ${Math.round(wind.power)}`, 10, "center");
   }
 
   private drawResults(view: RenderView, cw: number, ch: number): void {

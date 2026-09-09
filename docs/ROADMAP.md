@@ -198,6 +198,28 @@ start|stop|skip|tournament` from mods/broadcaster (`ControlPipeline`, tmi.js
 **Done:** a broadcaster runs and configures games from the extension UI or from
 chat, no code needed.
 
+## Post-v1 gameplay additions ☑
+
+Requested after Phase 8, layered on the existing engine:
+
+- ☑ **Drag-to-aim (slingshot)** on the overlay — `frontend/src/input.ts`
+  (`dragToSwing` pure helper + `attachDragInput`). Pull away from the ball,
+  release; launch is opposite the pull, drag distance = power. Live predicted
+  arc via `simulateShot` (curves with wind/terrain). Submits over the viewer's
+  JWT to `POST /swing` (identity required, 400 ms per-user rate limit) — same
+  authoritative round as chat, last-wins. Broadcaster toggle `allowDragInput`
+  (default on) in `ChannelConfig` + `/config` + config page + `/session`.
+  Tee-hint marker for players who haven't swung yet.
+- ☑ **Wind** — per-hole `wind: { angle, power }` in the course schema.
+  Constant acceleration while the ball moves, `windScale` (default 3) in
+  `physics/config.ts`, per-hole `physics.windScale` override. Drift ~`power²`,
+  so long shots are pushed far more than putts. On-overlay wind indicator
+  (arrow + strength). Added to `dunes-1`, `seaside-1`, `practice-2`.
+- ☑ Tests: 8 `wind` (crosswind/head/tail, power scaling, no-op, determinism,
+  override) + 7 `dragToSwing` units + 6 EBS `/swing` route + config
+  round-trip. **Verified in a browser**: drag shows a curving arc, releases,
+  ball drifts downwind on resolve. 195 total.
+
 ## Phase 9 — Real Twitch integration
 
 - ☐ Register the extension; wire real Extension secret + client id.

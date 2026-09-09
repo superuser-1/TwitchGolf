@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
+import type { Clock } from "../clock";
 import type { AppConfig } from "../config";
 import type { CourseRegistry } from "../courses";
 import { FreeGate } from "../entry/gate";
@@ -19,6 +20,8 @@ export interface ServerDeps {
   tournaments?: TournamentRegistry;
   store?: Store;
   gate?: EntryGate;
+  /** Time source for the swing rate limiter (defaults to wall clock). */
+  clock?: Clock;
 }
 
 const commandBody = z.object({
@@ -53,7 +56,17 @@ const configBody = z.object({
   defaultCourseId: z.string().min(1),
   roundSeconds: z.number().int().min(10).max(180),
   maxRoundsPerHole: z.number().int().min(2).max(15),
+  allowDragInput: z.boolean().default(true),
 });
+
+const swingBody = z.object({
+  angle: z.number(),
+  power: z.number(),
+  displayName: z.string().min(1).max(60).optional(),
+});
+
+/** Minimum ms between accepted overlay swings from one viewer (anti-spam). */
+const SWING_RATE_MS = 400;
 
 function identityFrom(req: FastifyRequest, config: AppConfig): ExtensionIdentity {
   const header = req.headers.authorization ?? "";
@@ -78,6 +91,7 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
   const app = Fastify({ logger: false });
   const { config, manager, courses } = deps;
   const gate: EntryGate = deps.gate ?? new FreeGate();
+  const lastSwingAt = new Map<string, number>();
 
   const resolveDefaultCourse = (channelId: string): string =>
     deps.store?.getChannelConfig(channelId)?.defaultCourseId ?? config.defaultCourseId;
@@ -147,6 +161,7 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
       hasIdentity: Boolean(id.userId),
       isPlayer: Boolean(id.userId && live?.isPlayer(id.userId)),
       myBallId: id.userId ? (live?.ballIdFor(id.userId) ?? null) : null,
+      allowDragInput: deps.store?.getChannelConfig(id.channelId)?.allowDragInput ?? true,
       game: live ? live.snapshot() : null,
     });
   });
@@ -162,6 +177,7 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
         defaultCourseId: config.defaultCourseId,
         roundSeconds: config.timing.roundSeconds,
         maxRoundsPerHole: config.timing.maxRoundsPerHole,
+        allowDragInput: true,
       },
       courses: courses.list(),
       tournaments: deps.tournaments?.list() ?? [],
@@ -220,6 +236,36 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
       body.userId,
       body.login,
       body.displayName ?? body.login,
+      body.angle,
+      body.power,
+    );
+    return reply.code(result.ok ? 200 : 409).send(result);
+  });
+
+  // Drag-to-aim swing submitted straight from the overlay, authenticated by the
+  // viewer's Twitch JWT. Same authoritative round as chat (last valid wins).
+  app.post("/swing", async (req: FastifyRequest, reply: FastifyReply) => {
+    const id = identityFrom(req, config);
+    if (!id.userId) {
+      return reply.code(403).send({ ok: false, reason: "identity-required" });
+    }
+    const body = swingBody.parse(req.body);
+
+    const key = `${id.channelId}:${id.userId}`;
+    const now = deps.clock?.now() ?? Date.now();
+    const last = lastSwingAt.get(key);
+    if (last !== undefined && now - last < SWING_RATE_MS) {
+      return reply.code(429).send({ ok: false, reason: "too-fast" });
+    }
+    lastSwingAt.set(key, now);
+
+    const game = manager.get(id.channelId);
+    if (!game || game.isFinished) return reply.code(404).send({ ok: false, reason: "no-game" });
+
+    const result = game.submit(
+      id.userId,
+      id.userId,
+      body.displayName ?? id.userId,
       body.angle,
       body.power,
     );

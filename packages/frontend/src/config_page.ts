@@ -6,6 +6,7 @@ interface ChannelConfig {
   defaultCourseId: string;
   roundSeconds: number;
   maxRoundsPerHole: number;
+  allowDragInput: boolean;
 }
 interface ConfigResponse {
   config: ChannelConfig;
@@ -46,11 +47,15 @@ async function boot(): Promise<void> {
   }
   const roundInput = numberInput(data.config.roundSeconds, 10, 180);
   const capInput = numberInput(data.config.maxRoundsPerHole, 2, 15);
+  const dragInput = document.createElement("input");
+  dragInput.type = "checkbox";
+  dragInput.checked = data.config.allowDragInput ?? true;
 
   app.append(
     labelled("Default course", courseSel),
     labelled("Round length (seconds)", roundInput),
     labelled("Max rounds per hole", capInput),
+    labelled("Allow drag-to-aim on the overlay (chat always works)", dragInput),
   );
 
   const save = document.createElement("button");
@@ -64,6 +69,7 @@ async function boot(): Promise<void> {
         defaultCourseId: courseSel.value,
         roundSeconds: Number(roundInput.value),
         maxRoundsPerHole: Number(capInput.value),
+        allowDragInput: dragInput.checked,
       }),
     });
     status.textContent = put.ok ? "saved ✓" : `save failed (${put.status})`;

@@ -32,7 +32,7 @@ async function main(): Promise<void> {
     store,
   });
 
-  const app = buildServer({ config, manager, courses, tournaments, store });
+  const app = buildServer({ config, manager, courses, tournaments, store, clock: systemClock });
   await app.listen({ port: config.port, host: config.host });
   console.log(
     `[ebs] http://${config.host}:${config.port}  courses: ${courses

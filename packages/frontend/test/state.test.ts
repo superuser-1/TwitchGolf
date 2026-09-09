@@ -21,6 +21,7 @@ const session = (over: Partial<SessionResponse> = {}): SessionResponse => ({
   hasIdentity: true,
   isPlayer: true,
   myBallId: 1,
+  allowDragInput: true,
   game: {
     holeIndex: 0,
     holeCount: 2,

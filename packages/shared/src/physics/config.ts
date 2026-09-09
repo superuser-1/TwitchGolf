@@ -21,6 +21,13 @@ export interface PhysicsConstants {
   lipOutDamping: number;
   /** Constant deceleration per surface (units/s^2). */
   decel: { fairway: number; green: number; sand: number; water: number };
+  /**
+   * Wind acceleration (units/s^2) at a hole's `wind.power` = 100. Applied every
+   * step while the ball is moving, so total drift grows ~quadratically with
+   * shot power — long powerful shots are pushed far more than short weak ones
+   * (a max drive drifts ~8 units per 100 wind.power; a putt barely moves).
+   */
+  windScale: number;
   /** Safety cap on simulation steps per shot. */
   maxSteps: number;
   /** Record a path sample every N steps (first, last and event points always kept). */
@@ -36,6 +43,7 @@ export const DEFAULT_PHYSICS: PhysicsConstants = Object.freeze({
   restitution: 0.7,
   lipOutDamping: 1,
   decel: Object.freeze({ fairway: 22, green: 12, sand: 70, water: 90 }),
+  windScale: 3,
   maxSteps: 60 * 30,
   pathSampleEvery: 2,
 }) as PhysicsConstants;
@@ -46,6 +54,7 @@ export function resolvePhysics(overrides?: HolePhysics): PhysicsConstants {
   return {
     ...DEFAULT_PHYSICS,
     restitution: overrides.restitution ?? DEFAULT_PHYSICS.restitution,
+    windScale: overrides.windScale ?? DEFAULT_PHYSICS.windScale,
     decel: {
       fairway: overrides.decel?.fairway ?? DEFAULT_PHYSICS.decel.fairway,
       green: overrides.decel?.green ?? DEFAULT_PHYSICS.decel.green,

@@ -64,16 +64,30 @@ describe("/config", () => {
       method: "PUT",
       url: "/config",
       headers: bearer("broadcaster"),
-      payload: { defaultCourseId: "seaside", roundSeconds: 45, maxRoundsPerHole: 6 },
+      payload: {
+        defaultCourseId: "seaside",
+        roundSeconds: 45,
+        maxRoundsPerHole: 6,
+        allowDragInput: false,
+      },
     });
     expect(put.json()).toEqual({
       ok: true,
-      config: { defaultCourseId: "seaside", roundSeconds: 45, maxRoundsPerHole: 6 },
+      config: {
+        defaultCourseId: "seaside",
+        roundSeconds: 45,
+        maxRoundsPerHole: 6,
+        allowDragInput: false,
+      },
     });
-    expect(store.getChannelConfig("chan1")).toMatchObject({ roundSeconds: 45 });
+    expect(store.getChannelConfig("chan1")).toMatchObject({
+      roundSeconds: 45,
+      allowDragInput: false,
+    });
 
     const get = await app.inject({ method: "GET", url: "/config", headers: bearer("broadcaster") });
     expect(get.json().config.defaultCourseId).toBe("seaside");
+    expect(get.json().config.allowDragInput).toBe(false);
   });
 
   it("PUT rejects an unknown course", async () => {

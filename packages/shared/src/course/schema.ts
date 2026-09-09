@@ -75,6 +75,8 @@ export const obstacleSchema = z.object({
 export const holePhysicsSchema = z
   .object({
     restitution: z.number().min(0).max(1).optional(),
+    /** Wind acceleration (units/s^2) at wind.power = 100. Defaults to 1.6. */
+    windScale: z.number().nonnegative().optional(),
     decel: z
       .object({
         fairway: z.number().positive().optional(),
@@ -85,6 +87,12 @@ export const holePhysicsSchema = z
       .optional(),
   })
   .optional();
+
+/** Wind on a hole: `angle` (degrees, the way the wind blows) + `power` 0..100. */
+export const windSchema = z.object({
+  angle: finite(),
+  power: z.number().min(0).max(100),
+});
 
 export const holeSchema = z
   .object({
@@ -97,6 +105,7 @@ export const holeSchema = z
     surfaces: z.array(surfaceSchema).default([]),
     walls: z.array(wallSchema).default([]),
     obstacles: z.array(obstacleSchema).default([]),
+    wind: windSchema.optional(),
     physics: holePhysicsSchema,
   })
   .superRefine((hole, ctx) => {
@@ -133,5 +142,6 @@ export type Surface = z.infer<typeof surfaceSchema>;
 export type Wall = z.infer<typeof wallSchema>;
 export type Obstacle = z.infer<typeof obstacleSchema>;
 export type HolePhysics = z.infer<typeof holePhysicsSchema>;
+export type Wind = z.infer<typeof windSchema>;
 export type Hole = z.infer<typeof holeSchema>;
 export type Course = z.infer<typeof courseSchema>;

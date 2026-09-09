@@ -69,7 +69,12 @@ describe("/session", () => {
   it("returns role and a null game when nothing is running", async () => {
     const res = await app.inject({ method: "GET", url: "/session", headers: bearer(viewerTok) });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ role: "viewer", isPlayer: false, game: null });
+    expect(res.json()).toMatchObject({
+      role: "viewer",
+      isPlayer: false,
+      game: null,
+      allowDragInput: true,
+    });
   });
 });
 

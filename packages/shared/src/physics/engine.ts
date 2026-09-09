@@ -1,4 +1,4 @@
-import type { Obstacle, Surface, SurfaceType, Wall } from "../course/schema";
+import type { Obstacle, Surface, SurfaceType, Wall, Wind } from "../course/schema";
 import { closestPointOnSegment, segmentIntersection, segmentNormal } from "../geom/segments";
 import type { Segment } from "../geom/segments";
 import type { Vec2 } from "../model/vec";
@@ -22,6 +22,7 @@ export interface SimField {
   surfaces?: Surface[];
   walls?: Wall[];
   obstacles?: Obstacle[];
+  wind?: Wind;
 }
 
 export interface ShotInput {
@@ -176,6 +177,18 @@ export function simulateShot(
   const hasObstacles = (field.obstacles?.length ?? 0) > 0;
   const obstaclePhase = opts.obstaclePhase ?? 0;
 
+  // Wind acceleration vector — the only other place trig touches a ball's path;
+  // computed once so the per-step loop stays IEEE-754 portable.
+  let windAx = 0;
+  let windAy = 0;
+  if (field.wind && field.wind.power > 0) {
+    const wRad = field.wind.angle * DEG2RAD;
+    const wMag = (k.windScale * field.wind.power) / 100;
+    windAx = Math.sin(wRad) * wMag;
+    windAy = -Math.cos(wRad) * wMag;
+  }
+  const hasWind = windAx !== 0 || windAy !== 0;
+
   const path: Vec2[] = [{ x, y }];
   const events: SimEvent[] = [];
   let sunk = false;
@@ -190,12 +203,20 @@ export function simulateShot(
       vy += slope.y * k.dt;
     }
 
-    const speed = Math.hypot(vx, vy);
+    let speed = Math.hypot(vx, vy);
     if (speed <= k.restSpeed) {
       if (!onSlope) break;
       if (++stuckOnSlope > 12) break;
     } else {
       stuckOnSlope = 0;
+    }
+
+    // Wind pushes the ball while it is in motion (not a ball at rest); constant
+    // per step, so total drift scales with how long the ball travels.
+    if (hasWind) {
+      vx += windAx * k.dt;
+      vy += windAy * k.dt;
+      speed = Math.hypot(vx, vy);
     }
 
     if (speed > 0) {

@@ -1,4 +1,4 @@
-import type { HolePhysics, Obstacle, Surface, Wall } from "../course/schema";
+import type { HolePhysics, Obstacle, Surface, Wall, Wind } from "../course/schema";
 import type { BallId } from "../model/ids";
 import type { Vec2 } from "../model/vec";
 import type { PhysicsConstants } from "./config";
@@ -17,6 +17,7 @@ export interface SimHoleInput {
   surfaces?: Surface[];
   walls?: Wall[];
   obstacles?: Obstacle[];
+  wind?: Wind;
 }
 
 /** One ball's state entering a round. */
@@ -58,6 +59,7 @@ export function fieldFromHole(hole: SimHoleInput): SimField {
     surfaces: hole.surfaces,
     walls: hole.walls,
     obstacles: hole.obstacles,
+    wind: hole.wind,
   };
 }
 

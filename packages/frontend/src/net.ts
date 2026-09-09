@@ -8,7 +8,32 @@ export interface SessionResponse {
   hasIdentity: boolean;
   isPlayer: boolean;
   myBallId: number | null;
+  allowDragInput: boolean;
   game: unknown;
+}
+
+export interface SwingBody {
+  angle: number;
+  power: number;
+  displayName?: string;
+}
+
+export async function submitSwing(
+  cfg: RuntimeConfig,
+  identity: Identity,
+  body: SwingBody,
+): Promise<{ ok: boolean; reason?: string; status: number }> {
+  try {
+    const res = await fetch(`${cfg.ebsUrl}/swing`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${identity.token}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = (await res.json().catch(() => ({}))) as { ok?: boolean; reason?: string };
+    return { ok: Boolean(json.ok), reason: json.reason, status: res.status };
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : "network", status: 0 };
+  }
 }
 
 export async function fetchSession(
