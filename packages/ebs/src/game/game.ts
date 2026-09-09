@@ -58,7 +58,9 @@ export interface SessionSnapshot {
   roundNumber: number;
   phase: GamePhase;
   roundClosesAt: number | null;
-  balls: { id: number; name: string; strokes: number; sunk: boolean }[];
+  /** Full geometry of the current hole so the client can render + re-sim. */
+  hole: Hole;
+  balls: { id: number; name: string; x: number; y: number; strokes: number; sunk: boolean }[];
   standings: StandingsRow[];
 }
 
@@ -90,6 +92,10 @@ export class GolfGame {
 
   isPlayer(userId: string): boolean {
     return this.balls.has(userId);
+  }
+
+  ballIdFor(userId: string): number | null {
+    return this.balls.get(userId)?.id ?? null;
   }
 
   start(): void {
@@ -150,9 +156,12 @@ export class GolfGame {
       roundNumber: this.roundNumber,
       phase: this.phase,
       roundClosesAt: this.roundClosesAt,
+      hole: this.hole(),
       balls: [...this.balls.values()].map((b) => ({
         id: b.id,
         name: b.name,
+        x: b.pos.x,
+        y: b.pos.y,
         strokes: b.strokes,
         sunk: b.sunk,
       })),

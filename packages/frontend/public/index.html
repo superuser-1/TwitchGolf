@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Twitch Golf — dev launcher</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 24px;
+        line-height: 1.5;
+      }
+      code {
+        background: #f1f3f5;
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+      a {
+        display: inline-block;
+        margin: 4px 8px 4px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Twitch Golf — local dev</h2>
+    <ol>
+      <li>Run the EBS: <code>npm run start -w @twitch-golf/ebs</code></li>
+      <li>
+        Start a game: <code>curl</code> POST <code>/control</code> with a broadcaster dev token, or
+        open a dashboard link below and use the ingest REPL.
+      </li>
+      <li>
+        Feed chat: <code>npm run start -w @twitch-golf/ingest</code> then type
+        <code>alice: !70, 50</code>
+      </li>
+    </ol>
+    <p>Open the overlay as…</p>
+    <a href="./video_component.html?role=viewer">spectator</a>
+    <a href="./video_component.html?role=viewer&user=alice">player “alice”</a>
+    <a href="./video_component.html?role=broadcaster&user=streamer">broadcaster</a>
+    <p>Params: <code>?channel=&ebs=&ws=&role=&user=&anon=1</code></p>
+  </body>
+</html>

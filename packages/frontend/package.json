@@ -1,0 +1,19 @@
+{
+  "name": "@twitch-golf/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Twitch extension video-component overlay (Canvas) + config/dashboard pages.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --serve",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@twitch-golf/shared": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

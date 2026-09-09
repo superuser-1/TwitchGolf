@@ -8,6 +8,19 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    // Plain Node scripts (build tooling) — give them Node globals.
+    files: ["**/*.mjs", "**/*.cjs"],
+    languageOptions: {
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        URL: "readonly",
+        Buffer: "readonly",
+        __dirname: "readonly",
+      },
+    },
+  },
+  {
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",

@@ -108,21 +108,31 @@ sequence; HTTP surface enforces auth + roles.
 
 **Done:** a local chat line drives a swing all the way into EBS game state.
 
-## Phase 5 — Frontend viewer
+## Phase 5 — Frontend viewer ☑
 
-- ☐ Bundler (esbuild) → static `video_component` bundle.
-- ☐ Canvas renderer: field, surface regions, walls, hole + flag, ball(s), name
-  labels (spectator).
-- ☐ Aim **compass overlay** centred on the player's ball.
-- ☐ Animation: replay deterministic sim from `round-result`, snap to canonical
-  finals.
-- ☐ HUD: hole #, par, your strokes, round countdown.
-- ☐ Identity grant flow; player vs spectator view switch; post-hole reveal-all.
-- ☐ Net layer: Twitch `listen` for broadcast in prod, mock WS in dev; `GET
-/session` snapshot on load.
+- ☑ `packages/frontend` + `build.mjs` (esbuild): `video_component` / `config` /
+  `dashboard` bundles, `--serve` dev server. `video_component.js` ~30 KB (shared
+  imported via `/physics` subpath to keep zod out of the bundle).
+- ☑ `render/canvas.ts`: letterboxed field, surface regions, walls, cup + flag,
+  balls, spectator name labels, aim compass, HUD (hole/par/strokes/countdown
+  bar), standings panel.
+- ☑ `anim.ts`: re-runs the deterministic sim from each `round-result` shot,
+  tweens the ball along the path, snaps to the server's canonical final.
+- ☑ `state.ts`: pure reducer — `applySession` / `applyMessage` (returns
+  `needsSession` on hole change) + `visibleBalls` / `showNames` view rules
+  (solo view while playing, reveal-all for 5 s after a hole).
+- ☑ `net.ts`: `Twitch.ext.listen("broadcast")` in production, reconnecting mock
+  WS in dev; `GET /session` on load and hole changes.
+- ☑ `twitch.ts`: `onAuthorized` + `requestIdShare` in production; dev builds a
+  local token (matches EBS `makeDevToken`) from query params.
+- ☑ EBS: `/session` now returns current hole geometry, `myBallId`, ball
+  positions; permissive CORS for the cross-origin overlay.
+- ☑ 9 `state.ts` tests. **Verified in a real browser**: `alice/bob/carol`
+  chat swings → EBS → mock WS → three balls animate up the fairway with labels,
+  HUD + standings render.
 
-**Done when:** the full loop runs locally — chat command → EBS → broadcast →
-animated ball in the browser, with correct player/spectator views.
+**Done:** chat command → EBS → broadcast → animated ball in the browser, with
+player vs spectator views.
 
 ## Phase 6 — Multi-hole courses + scorecard
 

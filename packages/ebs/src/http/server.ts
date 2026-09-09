@@ -51,6 +51,14 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
     reply.code(500).send({ error: "internal" });
   });
 
+  // The extension frontend is served from a different origin; allow it through.
+  app.addHook("onRequest", async (req, reply) => {
+    reply.header("access-control-allow-origin", "*");
+    reply.header("access-control-allow-headers", "authorization,content-type,x-ingest-secret");
+    reply.header("access-control-allow-methods", "GET,POST,OPTIONS");
+    if (req.method === "OPTIONS") return reply.code(204).send();
+  });
+
   app.get("/health", async () => ({ ok: true }));
 
   app.get("/courses", async () => ({ courses: courses.list() }));
@@ -58,11 +66,13 @@ export function buildServer(deps: ServerDeps): FastifyInstance {
   app.get("/session", async (req: FastifyRequest, reply: FastifyReply) => {
     const id = identityFrom(req, config);
     const game = manager.get(id.channelId);
+    const live = game && !game.isFinished ? game : null;
     return reply.send({
       role: id.role,
       hasIdentity: Boolean(id.userId),
-      isPlayer: Boolean(id.userId && game?.isPlayer(id.userId)),
-      game: game && !game.isFinished ? game.snapshot() : null,
+      isPlayer: Boolean(id.userId && live?.isPlayer(id.userId)),
+      myBallId: id.userId ? (live?.ballIdFor(id.userId) ?? null) : null,
+      game: live ? live.snapshot() : null,
     });
   });
 
