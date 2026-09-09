@@ -1,0 +1,23 @@
+{
+  "id": "practice-2",
+  "name": "Practice — 2",
+  "size": { "w": 100, "h": 150 },
+  "par": 3,
+  "tee": { "x": 20, "y": 135 },
+  "cup": { "x": 80, "y": 25, "radius": 2.4 },
+  "surfaces": [
+    { "type": "sand", "shape": { "kind": "circle", "x": 50, "y": 80, "r": 14 } },
+    { "type": "water", "shape": { "kind": "rect", "x": 0, "y": 45, "w": 40, "h": 10 } },
+    {
+      "type": "slope",
+      "shape": { "kind": "rect", "x": 55, "y": 55, "w": 45, "h": 30 },
+      "accel": { "x": -5, "y": 0 }
+    }
+  ],
+  "walls": [
+    { "x1": 8, "y1": 8, "x2": 8, "y2": 142 },
+    { "x1": 92, "y1": 8, "x2": 92, "y2": 142 }
+  ],
+  "obstacles": [{ "kind": "windmill", "x": 50, "y": 35, "radius": 9, "period": 4, "phase": 0 }],
+  "physics": { "restitution": 0.7, "decel": { "fairway": 22, "green": 12, "sand": 70 } }
+}

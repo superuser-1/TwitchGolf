@@ -1,0 +1,8 @@
+{
+  "id": "practice-1",
+  "name": "Practice — 1",
+  "size": { "w": 100, "h": 150 },
+  "par": 2,
+  "tee": { "x": 50, "y": 135 },
+  "cup": { "x": 50, "y": 20, "radius": 2.2 }
+}
