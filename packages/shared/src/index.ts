@@ -3,3 +3,4 @@
 export * from "./model/index";
 export * from "./protocol/index";
 export * from "./course/index";
+export * from "./physics/index";

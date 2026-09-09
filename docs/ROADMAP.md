@@ -22,19 +22,29 @@ Legend: ☐ todo · ◐ in progress · ☑ done
 **Done:** `npm run format:check && npm run lint && npm run typecheck && npm test`
 all green — 49 tests.
 
-## Phase 1 — Deterministic sim (flat)
+## Phase 1 — Deterministic sim (flat) ☑
 
-- ☐ Fixed-timestep engine in `shared/physics`: integrate, constant fairway
-  deceleration, rest threshold.
-- ☐ Field-edge bounce with restitution.
-- ☐ Hole capture + lip-out.
-- ☐ `simulateRound(state, swings, roundNumber)` pure API.
-- ☐ Single-ball scenario tests + golden trajectory snapshots.
-- ☐ Cross-env determinism test (Node vs jsdom).
-- ☐ `tools/course-preview` MVP: load course, fire shots from a text box, render.
+- ☑ Fixed-timestep engine in `shared/physics/engine.ts`: `simulateShot` —
+  constant fairway deceleration, rest threshold, `Math.sin/cos` only for the
+  initial velocity (rest of the sim is IEEE-754-portable).
+- ☑ Field-edge bounce with restitution (+ clamp guard against tunnelling).
+- ☑ Cup capture (segment-distance test) + lip-out with `lipOutDamping` hook.
+- ☑ `simulateRound(hole, inputs, roundNumber, physics?)` pure API in
+  `physics/simulate.ts` — independent balls, input order preserved, sunk /
+  no-swing pass-through.
+- ☑ `physics/config.ts`: `DEFAULT_PHYSICS` + `resolvePhysics()` merging per-hole
+  course overrides.
+- ☑ Scenario tests (rolling, direction, power scaling, bounce, restitution,
+  cup drop, lip-out, tap-in) + 5 committed golden trajectory snapshots +
+  repeatability tests. 80 tests total.
+- ☑ `tools/course-preview` (terminal REPL, `tsx`): load a hole, type swing
+  commands, ASCII board render. `npm run play -w @twitch-golf/course-preview -- practice-2`
 
-**Done when:** you can play-test a flat hole locally and results are
-deterministic.
+**Done:** flat holes are play-testable locally; sim output is deterministic and
+snapshot-pinned.
+
+> Note: the browser canvas play-test surface is folded into Phase 5 (needs the
+> frontend bundler); the terminal REPL covers Phase 1 physics tuning.
 
 ## Phase 2 — Terrain
 

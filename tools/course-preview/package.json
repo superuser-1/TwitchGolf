@@ -1,0 +1,17 @@
+{
+  "name": "@twitch-golf/course-preview",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Terminal play-test harness for the shared golf sim.",
+  "scripts": {
+    "play": "tsx src/play.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@twitch-golf/shared": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

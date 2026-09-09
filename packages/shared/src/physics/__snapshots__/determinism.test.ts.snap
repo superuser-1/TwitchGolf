@@ -1,0 +1,164 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden trajectories > angled shot off a wall 1`] = `
+{
+  "events": [
+    "rest",
+  ],
+  "final": {
+    "x": 89.312,
+    "y": 71.467,
+  },
+  "pathPoints": 85,
+  "pathTail": [
+    {
+      "x": 89.283,
+      "y": 71.488,
+    },
+    {
+      "x": 89.307,
+      "y": 71.471,
+    },
+    {
+      "x": 89.312,
+      "y": 71.467,
+    },
+  ],
+  "steps": 166,
+  "sunk": false,
+}
+`;
+
+exports[`golden trajectories > bank shot 1`] = `
+{
+  "events": [
+    "bounce",
+    "rest",
+  ],
+  "final": {
+    "x": 15.106,
+    "y": 82.104,
+  },
+  "pathPoints": 50,
+  "pathTail": [
+    {
+      "x": 15.08,
+      "y": 82.125,
+    },
+    {
+      "x": 15.102,
+      "y": 82.107,
+    },
+    {
+      "x": 15.106,
+      "y": 82.104,
+    },
+  ],
+  "steps": 96,
+  "sunk": false,
+}
+`;
+
+exports[`golden trajectories > gentle putt that drops 1`] = `
+{
+  "events": [
+    "sink",
+  ],
+  "final": {
+    "x": 50,
+    "y": 20,
+  },
+  "pathPoints": 17,
+  "pathTail": [
+    {
+      "x": 50,
+      "y": 22.59,
+    },
+    {
+      "x": 50,
+      "y": 22.218,
+    },
+    {
+      "x": 50,
+      "y": 20,
+    },
+  ],
+  "steps": 30,
+  "sunk": true,
+}
+`;
+
+exports[`golden trajectories > mid-power drive 1`] = `
+{
+  "events": [
+    "rest",
+  ],
+  "final": {
+    "x": 50,
+    "y": 82.691,
+  },
+  "pathPoints": 70,
+  "pathTail": [
+    {
+      "x": 50,
+      "y": 82.736,
+    },
+    {
+      "x": 50,
+      "y": 82.7,
+    },
+    {
+      "x": 50,
+      "y": 82.691,
+    },
+  ],
+  "steps": 136,
+  "sunk": false,
+}
+`;
+
+exports[`golden trajectories > screamer that lips out 1`] = `
+{
+  "events": [
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "bounce",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "lip-out",
+    "rest",
+  ],
+  "final": {
+    "x": 50,
+    "y": 37.227,
+  },
+  "pathPoints": 76,
+  "pathTail": [
+    {
+      "x": 50,
+      "y": 37.165,
+    },
+    {
+      "x": 50,
+      "y": 37.208,
+    },
+    {
+      "x": 50,
+      "y": 37.227,
+    },
+  ],
+  "steps": 149,
+  "sunk": false,
+}
+`;
